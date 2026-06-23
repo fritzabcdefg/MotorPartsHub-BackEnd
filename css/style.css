@@ -52,11 +52,32 @@ input[type="text"],input[type="file"],input[type="password"],input[type="email"]
     width:100%;padding:10px;border-radius:6px;border:1px solid rgba(255,255,255,0.06);background:rgba(255,255,255,0.02);color:var(--text)
 }
 
-button, .btn{background:var(--accent);color:#050006;border:none;padding:10px 14px;border-radius:8px;cursor:pointer}
-button.secondary, .btn.secondary{background:transparent;border:1px solid rgba(155,92,255,0.18);color:var(--muted)}
-button:hover{filter:brightness(1.05)}
+button, .btn{background:var(--accent);color:#050006;border:none;padding:12px 14px;border-radius:10px;cursor:pointer;transition:transform .2s ease, filter .2s ease;box-shadow:0 14px 30px rgba(155,92,255,0.18)}
+button.secondary, .btn.secondary{background:transparent;border:1px solid rgba(155,92,255,0.22);color:var(--muted)}
+button:hover, .btn:hover{filter:brightness(1.08);transform:translateY(-1px)}
 
 .muted{color:var(--muted)}
+
+/* New home page layout */
+.page-shell{max-width:1200px;margin:30px auto;display:flex;flex-direction:column;gap:24px}
+.hero{display:grid;grid-template-columns:1.1fr .9fr;gap:24px;align-items:center}
+.eyebrow{display:inline-block;text-transform:uppercase;letter-spacing:2px;font-size:.8rem;color:var(--accent-2);margin-bottom:12px}
+.hero h1{font-size:3rem;line-height:1.05;margin:0}
+.lead{color:var(--muted);font-size:1.05rem;max-width:680px;margin:18px 0}
+.hero-actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:16px}
+.hero-panel{display:flex;justify-content:flex-end}
+.panel-card{background:rgba(18,5,36,0.95);border:1px solid rgba(155,92,255,0.18);padding:24px;border-radius:16px;max-width:420px;box-shadow:0 20px 80px rgba(0,0,0,0.25)}
+.panel-card h2{margin-top:0;color:var(--accent)}
+.feature-list{list-style:none;padding:0;margin:16px 0 0}
+.feature-list li{position:relative;padding-left:24px;margin-bottom:12px;color:var(--text)}
+.feature-list li:before{content:'•';position:absolute;left:0;top:0;color:var(--accent)}
+.stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:20px}
+.stat-grid div{background:rgba(255,255,255,0.04);padding:16px;border-radius:12px;text-align:center}
+.stat-grid strong{display:block;font-size:1.5rem;color:var(--text)}
+.stat-grid span{color:var(--muted);font-size:.95rem}
+.spotlight{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.spotlight-card{border:1px solid rgba(155,92,255,0.14);padding:24px}
+.spotlight-card h2{margin-top:0;color:var(--accent)}
 
 /* Product image */
 .product-img{max-width:100%;border-radius:6px;border:1px solid rgba(255,255,255,0.04)}
