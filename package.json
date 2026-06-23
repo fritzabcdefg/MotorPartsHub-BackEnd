@@ -1,0 +1,28 @@
+{
+  "name": "MotorPartsHub",
+  "version": "1.0.0",
+  "description": "",
+  "main": "js/server.js",
+  "scripts": {
+    "start": "node js/server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fritzabcdefg/MotorPartsHub.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/fritzabcdefg/MotorPartsHub/issues"
+  },
+  "homepage": "https://github.com/fritzabcdefg/MotorPartsHub#readme",
+  "dependencies": {
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "multer": "^1.4.5-lts.1"
+  }
+  
+}
