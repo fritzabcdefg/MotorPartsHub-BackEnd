@@ -6,6 +6,7 @@ const path = require('path');
 
 const sequelize = require('../models/database');
 const Part = require('../models/Part');
+const Item = require('../models/Item');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -173,6 +174,85 @@ app.get('/api/v1/parts', verifyAdmin, async (req, res) => {
 		res.json({ success: true, parts });
 	} catch (error) {
 		res.status(500).json({ message: 'Unable to fetch parts.', error: error.message });
+	}
+});
+
+// Items API (mp2) - public listing for storefront and admin CRUD
+app.get('/api/v1/items', async (req, res) => {
+	try {
+		const items = await Item.findAll();
+		// Provide a `rows` shape used by the existing homepage script
+		const rows = items.map(i => ({
+			item_id: i.id,
+			description: i.description || i.name,
+			sell_price: i.sell_price,
+			img_path: i.img_path || '',
+			quantity: i.quantity
+		}));
+		res.json({ rows });
+	} catch (error) {
+		console.error('GET /api/v1/items error:', error.stack || error.message);
+		res.status(500).json({ message: 'Unable to fetch items.', error: error.message });
+	}
+});
+
+app.get('/api/v1/items/:id', async (req, res) => {
+	try {
+		const item = await Item.findByPk(req.params.id);
+		if (!item) return res.status(404).json({ message: 'Item not found.' });
+		res.json(item);
+	} catch (error) {
+		console.error('GET /api/v1/items/:id error:', error.stack || error.message);
+		res.status(500).json({ message: 'Unable to fetch item.', error: error.message });
+	}
+});
+
+// Admin CRUD for items
+app.post('/api/v1/items', verifyAdmin, upload.single('image'), async (req, res) => {
+	try {
+		const img = req.file ? `/uploads/${req.file.filename}` : null;
+		const item = await Item.create({
+			name: req.body.name,
+			description: req.body.description,
+			sell_price: parseFloat(req.body.sell_price) || 0,
+			quantity: parseInt(req.body.quantity, 10) || 0,
+			img_path: img
+		});
+		res.status(201).json({ success: true, item });
+	} catch (error) {
+		console.error('POST /api/v1/items error:', error.stack || error.message);
+		res.status(400).json({ message: 'Unable to create item.', error: error.message });
+	}
+});
+
+app.put('/api/v1/items/:id', verifyAdmin, upload.single('image'), async (req, res) => {
+	try {
+		const item = await Item.findByPk(req.params.id);
+		if (!item) return res.status(404).json({ message: 'Item not found.' });
+		const img = req.file ? `/uploads/${req.file.filename}` : item.img_path;
+		await item.update({
+			name: req.body.name || item.name,
+			description: req.body.description || item.description,
+			sell_price: req.body.sell_price ? parseFloat(req.body.sell_price) : item.sell_price,
+			quantity: req.body.quantity ? parseInt(req.body.quantity, 10) : item.quantity,
+			img_path: img
+		});
+		res.json({ success: true, message: 'Item updated.', item });
+	} catch (error) {
+		console.error('PUT /api/v1/items/:id error:', error.stack || error.message);
+		res.status(400).json({ message: 'Unable to update item.', error: error.message });
+	}
+});
+
+app.delete('/api/v1/items/:id', verifyAdmin, async (req, res) => {
+	try {
+		const item = await Item.findByPk(req.params.id);
+		if (!item) return res.status(404).json({ message: 'Item not found.' });
+		await item.destroy();
+		res.json({ success: true, message: 'Item deleted.' });
+	} catch (error) {
+		console.error('DELETE /api/v1/items/:id error:', error.stack || error.message);
+		res.status(500).json({ message: 'Unable to delete item.', error: error.message });
 	}
 });
 

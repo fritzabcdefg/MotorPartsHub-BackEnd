@@ -5,7 +5,7 @@ M   achine problems 20pts
 ✅mp2 NodeJS CRUD api 20pts
 
 ✅ mp3 CRUD Jquery/datatables multiple file uploads for mp1 20pts
-mp4 CRUD Jquery/datatables frontend for mp2
+✅ mp4 CRUD Jquery/datatables frontend for mp2 20pts
 mp5 generate and send tokens for authentication. 15pts
     ✅ save token on users table. 5pts
 ✅ mp6 User registration, Login API via Jquery AJAX. admin can update role of user. admin can deactivate users. List users on datatable. NodeJS 20pts
