@@ -8,7 +8,8 @@ Machine problems 20pts
 ✅ mp4 CRUD Jquery/datatables frontend for mp2 20pts
 ✅ mp5 generate and send tokens for authentication. 15pts
     ✅ save token on users table. 5pts
-✅ mp6 User registration, Login API via Jquery AJAX. admin can update role of user. admin can deactivate users. List users on datatable. NodeJS 20pts
+✅ mp6 User registration, Login API via Jquery AJAX. admin can update role of user.
+✅ admin can deactivate users. List users on datatable. NodeJS 20pts
 ✅ mp7  use Sequelize ORM on CRUD functions 20pts
 
 term test Lab 40pts
@@ -39,8 +40,8 @@ jquery infinite scroll (datatable pagination is not applicable) 20pts
 unit 3 40
 functional requirements completeness 10
 app complexity. added features 10
-program execution 10
-project contribution 10
+✅ program execution 10
+✅ project contribution 10
 
 ----------
 Simplest task completed: file-list presence check
