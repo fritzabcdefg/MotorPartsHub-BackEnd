@@ -45,7 +45,7 @@
 
     function renderUsersTable(users) {
         const html = `
-            <section class="card admin-section">
+            <section id="admin-users" class="card admin-section">
                 <h2>User Management</h2>
                 <table id="usersTable" class="table">
                     <thead>
@@ -122,7 +122,7 @@
 
     function renderPartsSection(parts) {
         const html = `
-            <section class="card admin-section">
+            <section id="admin-inventory" class="card admin-section">
                 <h2>Parts Management</h2>
                 <form id="partForm" class="part-form">
                     <input type="hidden" id="partId" value="">
@@ -206,7 +206,7 @@
 
     function renderItemsSection(items) {
         const html = `
-            <section class="card admin-section">
+            <section id="admin-orders" class="card admin-section">
                 <h2>Items (Storefront)</h2>
                 <form id="itemForm" class="part-form">
                     <input type="hidden" id="itemId" value="">

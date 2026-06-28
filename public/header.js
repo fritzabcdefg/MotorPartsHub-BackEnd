@@ -39,7 +39,7 @@ function initHeaderNav() {
     if (navDashboard && !document.querySelector('.admin-links')) {
       const adminLinks = document.createElement('span');
       adminLinks.className = 'admin-links';
-      adminLinks.innerHTML = '\n      <a href="users.html">Users</a>\n      <a href="items.html">Inventory</a>\n      <a href="orders.html">Orders</a>';
+      adminLinks.innerHTML = '\n      <a href="dashboard.html#users">Users</a>\n      <a href="dashboard.html#inventory">Inventory</a>\n      <a href="dashboard.html#orders">Orders</a>';
       navDashboard.parentNode.insertBefore(adminLinks, navDashboard.nextSibling);
     }
   }
