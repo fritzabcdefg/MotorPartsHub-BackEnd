@@ -4,20 +4,20 @@ const multer = require('multer');
 const fs = require('fs');
 const path = require('path');
 
-const sequelize = require('../models/database');
-const Part = require('../models/Part');
-const Item = require('../models/Item');
+const sequelize = require('./models/database');
+const Part = require('./models/Part');
+const Item = require('./models/Item');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
-app.use('/css', express.static(path.join(__dirname, '..', 'css')));
-app.use('/js', express.static(path.join(__dirname, '..', 'js')));
-app.use(express.static(path.join(__dirname, '../public')));
+app.use('/css', express.static(path.join(__dirname, '..', 'frontend', 'css')));
+app.use('/js', express.static(path.join(__dirname, '..', 'frontend', 'js')));
+app.use(express.static(path.join(__dirname, '..', 'frontend', 'public')));
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-const uploadPath = path.join(__dirname, '..', 'public', 'uploads');
+const uploadPath = path.join(__dirname, '..', 'frontend', 'public', 'uploads');
 if (!fs.existsSync(uploadPath)) {
 	fs.mkdirSync(uploadPath, { recursive: true });
 }
@@ -74,7 +74,7 @@ async function findUserByToken(token, includeInactive = false) {
 
 // Test route
 app.get('/', (req, res) => {
-	res.sendFile(path.join(__dirname, '..', 'public', 'home.html'));
+	res.sendFile(path.join(__dirname, '..', 'frontend', 'public', 'home.html'));
 });
 
 app.post('/api/v1/register', async (req, res) => {
