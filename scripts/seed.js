@@ -1,17 +1,7 @@
 require('dotenv').config();
 const sequelize = require('../models/database');
-const Part = require('../models/Part');
-const { DataTypes } = require('sequelize');
-
-// Define User model locally to match the server definition
-const User = sequelize.define('User', {
-  name: { type: DataTypes.STRING, allowNull: false },
-  email: { type: DataTypes.STRING, allowNull: false, unique: true },
-  password: { type: DataTypes.STRING, allowNull: false },
-  active: { type: DataTypes.BOOLEAN, defaultValue: true },
-  role: { type: DataTypes.STRING, defaultValue: 'user' },
-  token: { type: DataTypes.STRING, allowNull: true }
-});
+// Part model not used in this project scope anymore
+const User = require('../models/User');
 
 async function seed() {
   try {
@@ -21,28 +11,20 @@ async function seed() {
 
     // Seed users (idempotent with findOrCreate)
     const users = [
-      { name: 'Alice', email: 'alice@example.com', password: 'alicepass', role: 'admin' },
-      { name: 'Bob', email: 'bob@example.com', password: 'bobpass' }
+      { name: 'Fritzie', email: 'Fritzie@gmail.com', password: 'AdminPassword', role: 'admin' },
+      { name: 'Lorraine', email: 'Lorraine@gmail.com', password: 'AdminPassword', role: 'admin' },
+      { name: 'User Test', email: 'UserTest@gmail.com', password: 'CustomerPassword', role: 'user' }
     ];
 
     for (const u of users) {
       const [user, created] = await User.findOrCreate({ where: { email: u.email }, defaults: u });
-      console.log(`${created ? 'Created' : 'Exists'} user: ${user.email}`);
+      if (!created) {
+        await user.update({ name: u.name, password: u.password, role: u.role, active: true });
+      }
+      console.log(`${created ? 'Created' : 'Updated'} user: ${user.email} (${user.role})`);
     }
 
-    // Seed parts
-    const parts = [
-      { name: 'Brake Pad', category: 'Braking', description: 'High-friction brake pad for cars and trucks.', price: 1250.00, quantity: 120 },
-      { name: 'Oil Filter', category: 'Engine', description: 'Replacement oil filter for most standard engines.', price: 799.00, quantity: 220 },
-      { name: 'Air Filter', category: 'Engine', description: 'Premium air filter for better airflow and protection.', price: 1500.00, quantity: 180 },
-      { name: 'Spark Plug', category: 'Ignition', description: 'Long-life spark plug for efficient combustion.', price: 550.00, quantity: 300 },
-      { name: 'Drive Belt', category: 'Accessories', description: 'Durable drive belt for alternator and power-steering systems.', price: 2200.00, quantity: 95 }
-    ];
-
-    for (const p of parts) {
-      const [part, created] = await Part.findOrCreate({ where: { name: p.name }, defaults: p });
-      console.log(`${created ? 'Created' : 'Exists'} part: ${part.name}`);
-    }
+    // Parts seeding removed; project uses `items` table instead.
 
     console.log('Seeding complete.');
     await sequelize.close();

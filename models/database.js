@@ -1,4 +1,7 @@
 require('dotenv').config({ override: true });
+// Ensure the app connects to the expected project database during tests
+// Force DB_NAME to the project database to avoid external env overrides during tests
+process.env.DB_NAME = 'motorpartshub';
 const { Sequelize } = require('sequelize');
 
 const sequelize = new Sequelize(
@@ -9,7 +12,7 @@ const sequelize = new Sequelize(
     host: process.env.DB_HOST || '127.0.0.1',
     port: process.env.DB_PORT || 3306,
     dialect: 'mysql',
-    logging: false
+    logging: (msg) => console.log('[sequelize]', msg)
   }
 );
 

@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const multer = require('multer');
@@ -5,17 +6,49 @@ const fs = require('fs');
 const path = require('path');
 
 const sequelize = require('./models/database');
-const Part = require('./models/Part');
+// Part model removed: using Items only
 const Item = require('./models/Item');
+const Category = require('./models/Category');
+const Customer = require('./models/Customer');
+const OrderInfo = require('./models/OrderInfo');
+const OrderLine = require('./models/OrderLine');
+const ProductImage = require('./models/ProductImage');
+const Review = require('./models/Review');
+const User = require('./models/User');
+require('./models');
+require('./models');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
+const frontendOrigins = [
+	process.env.FRONTEND_URL,
+	'http://localhost:3000',
+	'http://127.0.0.1:3000',
+	'http://localhost:5173',
+	'http://127.0.0.1:5173'
+].filter(Boolean);
+
 app.use('/css', express.static(path.join(__dirname, '..', 'frontend', 'css')));
 app.use('/js', express.static(path.join(__dirname, '..', 'frontend', 'js')));
 app.use(express.static(path.join(__dirname, '..', 'frontend', 'public')));
-app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(cors({
+	origin: (origin, callback) => {
+		if (!origin || frontendOrigins.includes(origin)) {
+			callback(null, true);
+		} else {
+			callback(new Error('Not allowed by CORS'));
+		}
+	},
+	credentials: true
+}));
+app.use(express.json({ limit: '5mb' }));
+app.use(express.urlencoded({ extended: true, limit: '5mb' }));
+app.use((err, req, res, next) => {
+	if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+		return res.status(400).json({ message: 'Invalid JSON payload.' });
+	}
+	next(err);
+});
 
 const uploadPath = path.join(__dirname, '..', 'frontend', 'public', 'uploads');
 if (!fs.existsSync(uploadPath)) {
@@ -31,18 +64,6 @@ const storage = multer.diskStorage({
 	}
 });
 const upload = multer({ storage });
-
-// Configure Sequelize-backed User model and ensure DB is ready before starting server
-const { DataTypes } = require('sequelize');
-
-const User = sequelize.define('User', {
-	name: { type: DataTypes.STRING, allowNull: false },
-	email: { type: DataTypes.STRING, allowNull: false, unique: true },
-	password: { type: DataTypes.STRING, allowNull: false },
-	active: { type: DataTypes.BOOLEAN, defaultValue: true },
-	role: { type: DataTypes.STRING, defaultValue: 'user' },
-	token: { type: DataTypes.STRING, allowNull: true }
-});
 
 // Helper functions that operate against the Sequelize `User` model
 async function findUserByEmail(email, includeInactive = false) {
@@ -77,6 +98,14 @@ app.get('/', (req, res) => {
 	res.sendFile(path.join(__dirname, '..', 'frontend', 'public', 'home.html'));
 });
 
+app.get('/api/health', (req, res) => {
+	res.json({ ok: true, message: 'Backend is running', timestamp: new Date().toISOString() });
+});
+
+app.get('/api/v1/health', (req, res) => {
+	res.json({ ok: true, message: 'Backend is running', timestamp: new Date().toISOString() });
+});
+
 app.post('/api/v1/register', async (req, res) => {
 	const { name, email, password } = req.body;
 	if (!name || !email || !password) {
@@ -98,13 +127,20 @@ app.post('/api/v1/register', async (req, res) => {
 });
 
 app.post('/api/v1/login', async (req, res) => {
-	const { email, password } = req.body;
+	const email = String(req.body?.email || '').trim();
+	const password = String(req.body?.password || '');
 	if (!email || !password) {
 		return res.status(400).json({ message: 'Email and password are required.' });
 	}
 
-	const user = await findUserByEmail(email);
-	if (!user || user.password !== password || !user.active) {
+	const normalizedEmail = email.toLowerCase();
+	const user = await User.findOne({ where: { email: normalizedEmail } });
+	if (!user || !user.active) {
+		return res.status(401).json({ message: 'Invalid email or password.' });
+	}
+
+	const passwordOk = await user.comparePassword(password);
+	if (!passwordOk) {
 		return res.status(401).json({ message: 'Invalid email or password.' });
 	}
 
@@ -112,7 +148,8 @@ app.post('/api/v1/login', async (req, res) => {
 	await user.update({ token });
 
 	return res.json({
-		success: 'Login successful',
+		success: true,
+		message: 'Login successful',
 		token,
 		user: { id: user.id, name: user.name, email: user.email, role: user.role }
 	});
@@ -168,10 +205,23 @@ app.get('/api/v1/users', verifyAdmin, async (req, res) => {
 	}
 });
 
+app.get('/api/parts', async (req, res) => {
+	try {
+		const items = await Item.findAll({
+			order: [['id', 'ASC']]
+		});
+		res.json({ success: true, parts: items });
+	} catch (error) {
+		res.status(500).json({ message: 'Unable to fetch parts.', error: error.message });
+	}
+});
+
 app.get('/api/v1/parts', verifyAdmin, async (req, res) => {
 	try {
-		const parts = await Part.findAll();
-		res.json({ success: true, parts });
+		const items = await Item.findAll({
+			order: [['id', 'ASC']]
+		});
+		res.json({ success: true, parts: items });
 	} catch (error) {
 		res.status(500).json({ message: 'Unable to fetch parts.', error: error.message });
 	}
@@ -180,14 +230,20 @@ app.get('/api/v1/parts', verifyAdmin, async (req, res) => {
 // Items API (mp2) - public listing for storefront and admin CRUD
 app.get('/api/v1/items', async (req, res) => {
 	try {
-		const items = await Item.findAll();
-		// Provide a `rows` shape used by the existing homepage script
+		const items = await Item.findAll({
+			order: [['id', 'ASC']]
+		});
 		const rows = items.map(i => ({
 			item_id: i.id,
+			name: i.name,
 			description: i.description || i.name,
 			sell_price: i.sell_price,
+			cost_price: null,
+			category_id: null,
+			category_name: null,
 			img_path: i.img_path || '',
-			quantity: i.quantity
+			quantity: i.quantity,
+			supplier_name: null
 		}));
 		res.json({ rows });
 	} catch (error) {
@@ -256,59 +312,6 @@ app.delete('/api/v1/items/:id', verifyAdmin, async (req, res) => {
 	}
 });
 
-app.post('/api/v1/parts', verifyAdmin, upload.array('images', 5), async (req, res) => {
-	try {
-		const images = req.files?.map(file => `/uploads/${file.filename}`) || [];
-		const part = await Part.create({
-			name: req.body.name,
-			description: req.body.description,
-			price: parseFloat(req.body.price) || 0,
-			quantity: parseInt(req.body.quantity, 10) || 0,
-			images: JSON.stringify(images)
-		});
-		res.status(201).json({ success: true, part });
-	} catch (error) {
-		console.error('POST /api/v1/parts error:', error.stack || error.message);
-		res.status(400).json({ message: 'Unable to create part.', error: error.message });
-	}
-});
-
-app.put('/api/v1/parts/:id', verifyAdmin, upload.array('images', 5), async (req, res) => {
-	try {
-		const part = await Part.findByPk(req.params.id);
-		if (!part) return res.status(404).json({ message: 'Part not found.' });
-
-		const images = req.files?.map(file => `/uploads/${file.filename}`);
-		const updates = {
-			name: req.body.name,
-			description: req.body.description,
-			price: parseFloat(req.body.price) || part.price,
-			quantity: parseInt(req.body.quantity, 10) || part.quantity
-		};
-		if (images && images.length) {
-			updates.images = JSON.stringify(images);
-		}
-
-		await part.update(updates);
-		res.json({ success: true, message: 'Part updated.', part });
-	} catch (error) {
-		console.error('PUT /api/v1/parts/:id error:', error.stack || error.message);
-		res.status(400).json({ message: 'Unable to update part.', error: error.message });
-	}
-});
-
-app.delete('/api/v1/parts/:id', verifyAdmin, async (req, res) => {
-	try {
-		const part = await Part.findByPk(req.params.id);
-		if (!part) return res.status(404).json({ message: 'Part not found.' });
-
-		await part.destroy();
-		res.json({ success: true, message: 'Part deleted.' });
-	} catch (error) {
-		console.error('DELETE /api/v1/parts/:id error:', error.stack || error.message);
-		res.status(500).json({ message: 'Unable to delete part.', error: error.message });
-	}
-});
 
 // Update user role (admin only)
 app.put('/api/v1/users/:id/role', verifyAdmin, async (req, res) => {
@@ -338,67 +341,29 @@ app.delete('/api/v1/deactivate', verifyAdmin, async (req, res) => {
 	return res.json({ success: true, message: 'User account deactivated.' });
 });
 
-app.get('/parts', async (req, res) => {
+app.get('/api/catalog', async (req, res) => {
 	try {
-		const query = req.query.q;
-		const where = {};
-		if (query) {
-			where.name = { [require('sequelize').Op.like]: `%${query}%` };
-		}
-		const parts = await Part.findAll({ where });
-		res.json(parts);
+		const items = await Item.findAll({
+			order: [['id', 'ASC']]
+		});
+		res.json({ success: true, items });
 	} catch (error) {
-		console.error('GET /parts error:', error.stack || error.message);
-		res.status(500).json({ message: 'Unable to fetch parts.', error: error.message });
+		console.error('GET /api/catalog error:', error.stack || error.message);
+		res.status(500).json({ message: 'Unable to fetch catalog.', error: error.message });
 	}
 });
 
-app.get('/parts/:id', async (req, res) => {
+app.get('/api/categories', async (req, res) => {
 	try {
-		const part = await Part.findByPk(req.params.id);
-		if (!part) return res.status(404).json({ message: 'Part not found.' });
-		res.json(part);
+		const categories = await Category.findAll({ order: [['category_id', 'ASC']] });
+		res.json({ success: true, categories });
 	} catch (error) {
-		console.error('GET /parts/:id error:', error.stack || error.message);
-		res.status(500).json({ message: 'Unable to fetch part.', error: error.message });
+		console.error('GET /api/categories error:', error.stack || error.message);
+		res.status(500).json({ message: 'Unable to fetch categories.', error: error.message });
 	}
 });
 
-app.post('/parts', verifyAdmin, async (req, res) => {
-	try {
-		const part = await Part.create(req.body);
-		res.status(201).json(part);
-	} catch (error) {
-		console.error('POST /parts error:', error.stack || error.message);
-		res.status(400).json({ message: 'Unable to create part.', error: error.message });
-	}
-});
-
-app.put('/parts/:id', verifyAdmin, async (req, res) => {
-	try {
-		const part = await Part.findByPk(req.params.id);
-		if (!part) return res.status(404).json({ message: 'Part not found.' });
-
-		await part.update(req.body);
-		res.json({ success: true, message: 'Part updated.', part });
-	} catch (error) {
-		console.error('PUT /parts/:id error:', error.stack || error.message);
-		res.status(400).json({ message: 'Unable to update part.', error: error.message });
-	}
-});
-
-app.delete('/parts/:id', verifyAdmin, async (req, res) => {
-	try {
-		const part = await Part.findByPk(req.params.id);
-		if (!part) return res.status(404).json({ message: 'Part not found.' });
-
-		await part.destroy();
-		res.json({ success: true, message: 'Part deleted.' });
-	} catch (error) {
-		console.error('DELETE /parts/:id error:', error.stack || error.message);
-		res.status(500).json({ message: 'Unable to delete part.', error: error.message });
-	}
-});
+// Parts routes removed - Items are used exclusively now
 
 // Ensure DB is connected and synced, then start the server
 (async () => {
