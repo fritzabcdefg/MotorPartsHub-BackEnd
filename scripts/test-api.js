@@ -3,16 +3,16 @@ const base = `http://localhost:${process.env.PORT || 4000}`;
 
 async function run() {
   try {
-    console.log('GET /parts');
-    let r = await fetch(base + '/parts');
+    console.log('GET /items');
+    let r = await fetch(base + '/items');
     console.log('Status:', r.status);
     console.log('Body:', await r.json());
 
-    console.log('\nPOST /parts (create)');
-    r = await fetch(base + '/parts', {
+    console.log('\nPOST /items (create)');
+    r = await fetch(base + '/items', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: `Test Part ${Date.now()}`, price: 1.23 })
+      body: JSON.stringify({ name: `Test Item ${Date.now()}`, sell_price: 1.23 })
     });
     console.log('Status:', r.status);
     console.log('Body:', await r.json());
@@ -27,11 +27,11 @@ async function run() {
     console.log('Status:', r.status);
     console.log('Body:', await r.json());
 
-    console.log('\nGET /parts (after create)');
-    r = await fetch(base + '/parts');
+    console.log('\nGET /items (after create)');
+    r = await fetch(base + '/items');
     console.log('Status:', r.status);
     const parts = await r.json();
-    console.log('Parts count:', parts.length);
+    console.log('Items count:', parts.length);
 
     console.log('\nAPI tests complete.');
   } catch (e) {
