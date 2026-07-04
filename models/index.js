@@ -6,6 +6,7 @@ const OrderInfo = require('./OrderInfo');
 const OrderLine = require('./OrderLine');
 const ProductImage = require('./ProductImage');
 const Review = require('./Review');
+const User = require('./User');
 
 Item.hasMany(ProductImage, { foreignKey: 'item_id', as: 'images' });
 ProductImage.belongsTo(Item, { foreignKey: 'item_id', as: 'item' });
@@ -27,5 +28,6 @@ module.exports = {
   OrderInfo,
   OrderLine,
   ProductImage,
-  Review
+  Review,
+  User
 };
