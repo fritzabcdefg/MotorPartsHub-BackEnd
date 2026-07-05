@@ -10,7 +10,10 @@ const Item = sequelize.define('Item', {
   },
   name: { type: DataTypes.STRING, allowNull: false },
   description: { type: DataTypes.TEXT, allowNull: true },
+  cost_price: { type: DataTypes.FLOAT, allowNull: true },
   sell_price: { type: DataTypes.FLOAT, allowNull: false },
+  supplier_name: { type: DataTypes.STRING, allowNull: true },
+  category_id: { type: DataTypes.INTEGER, allowNull: true },
   quantity: { type: DataTypes.INTEGER, defaultValue: 0 },
   img_path: { type: DataTypes.STRING, allowNull: true }
 }, {

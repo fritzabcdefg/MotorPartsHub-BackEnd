@@ -1,61 +1,70 @@
-const express = require('express');
-const cors = require('cors');
-const path = require('path');
-const { frontendOrigins } = require('./config');
-const authRoutes = require('./routes/authRoutes');
-const userRoutes = require('./routes/userRoutes');
-const itemRoutes = require('./routes/itemRoutes');
-const { verifyAdmin } = require('./middlewares/auth');
-const { uploadDir } = require('./utils/upload');
-const { Item, Category } = require('./models');
-const { getParts, getCatalog, getCategories } = require('./controllers/itemController');
+  const express = require('express');
+  const cors = require('cors');
+  const path = require('path');
+  const { frontendOrigins } = require('./config');
+  const authRoutes = require('./routes/authRoutes');
+  const userRoutes = require('./routes/userRoutes');
+  const itemRoutes = require('./routes/itemRoutes');
+  const orderRoutes = require('./routes/orderRoutes');   // Added for XAMPP order tracking
+  const { verifyAdmin } = require('./middlewares/auth');
+  const { uploadDir } = require('./utils/upload');
+  const { Item, Category } = require('./models');
+  const { getParts, getCatalog, getCategories } = require('./controllers/itemController');
+  const orderController = require('./controllers/orderController');
+  const inventoryController = require('./controllers/inventoryController');
+  const reviewController = require('./controllers/reviewController');
+  const categoryController = require('./controllers/categoryController');
 
-const app = express();
+  const app = express();
+  const frontendRoot = path.resolve(__dirname, '..', 'MotorPartsHub-FrontEnd');
 
-app.use('/css', express.static(path.join(__dirname, '..', 'frontend', 'css')));
-app.use('/js', express.static(path.join(__dirname, '..', 'frontend', 'js')));
-app.use(express.static(path.join(__dirname, '..', 'frontend', 'public')));
-app.use('/uploads', express.static(uploadDir));
+  app.use('/css', express.static(path.join(frontendRoot, 'css')));
+  app.use('/js', express.static(path.join(frontendRoot, 'js')));
+  app.use(express.static(path.join(frontendRoot, 'public')));
+  app.use('/uploads', express.static(uploadDir));
 
-app.use(cors({
-  origin: (origin, callback) => {
-    if (!origin || frontendOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
+  app.use(cors({
+    origin: (origin, callback) => {
+      if (!origin || frontendOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
+    credentials: true
+  }));
+
+  app.use(express.json({ limit: '5mb' }));
+  app.use(express.urlencoded({ extended: true, limit: '5mb' }));
+  app.use((err, req, res, next) => {
+    if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+      return res.status(400).json({ message: 'Invalid JSON payload.' });
     }
-  },
-  credentials: true
-}));
+    next(err);
+  });
 
-app.use(express.json({ limit: '5mb' }));
-app.use(express.urlencoded({ extended: true, limit: '5mb' }));
-app.use((err, req, res, next) => {
-  if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
-    return res.status(400).json({ message: 'Invalid JSON payload.' });
-  }
-  next(err);
-});
+  app.get('/', (req, res) => {
+    res.sendFile(path.join(frontendRoot, 'public', 'home.html'));
+  });
 
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, '..', 'frontend', 'public', 'home.html'));
-});
+  app.get('/api/health', (req, res) => {
+    res.json({ ok: true, message: 'Backend is running', timestamp: new Date().toISOString() });
+  });
 
-app.get('/api/health', (req, res) => {
-  res.json({ ok: true, message: 'Backend is running', timestamp: new Date().toISOString() });
-});
+  app.get('/api/v1/health', (req, res) => {
+    res.json({ ok: true, message: 'Backend is running', timestamp: new Date().toISOString() });
+  });
 
-app.get('/api/v1/health', (req, res) => {
-  res.json({ ok: true, message: 'Backend is running', timestamp: new Date().toISOString() });
-});
 
-app.use('/api/v1', authRoutes);
-app.use('/api/v1/users', userRoutes);
-app.use('/api/v1/items', itemRoutes);
-
-app.get('/api/parts', getParts);
-app.get('/api/v1/parts', verifyAdmin, getParts);
-app.get('/api/catalog', getCatalog);
-app.get('/api/categories', getCategories);
-
-module.exports = app;
+  app.use('/api/v1', authRoutes);
+  app.use('/api/v1/users', userRoutes);
+  app.use('/api/v1/items', itemRoutes);
+  app.use('/api/v1/orders', orderRoutes);   
+  app.get('/api/v1/inventory', inventoryController.getAllInventory);
+  app.get('/api/v1/reviews', reviewController.getAllReviews);
+  app.get('/api/v1/categories', categoryController.getAllCategories);
+  app.get('/api/v1/parts', verifyAdmin, getParts);
+  app.get('/api/catalog', getCatalog);
+  app.get('/api/categories', getCategories);
+  app.get('/api/dashboard-stats', orderController.getDashboardStats);
+  module.exports = app;
