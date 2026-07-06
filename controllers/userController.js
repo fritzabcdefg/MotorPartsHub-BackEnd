@@ -1,3 +1,4 @@
+const db = require('../utils/db');
 const { getAllUsers, findUserByEmail, findUserById } = require('../utils/userHelpers');
 
 async function getUsers(req, res) {
@@ -48,3 +49,70 @@ module.exports = {
   updateUserRole,
   deactivateUser
 };
+
+async function updateProfile(req, res) {
+  const { userId, title, fname, lname, phone, addressline, town, zipcode } = req.body;
+  
+  if (!userId) {
+    return res.status(400).json({ success: false, message: 'User ID is required.' });
+  }
+
+  // Check if a new file was uploaded via multer
+  let imagePath = null;
+  if (req.file) {
+    // Save the relative path so the frontend can read it directly
+    imagePath = `/img/avatars/${req.file.filename}`;
+  }
+
+  try {
+    // 1. Update the Customer details
+    let sql = `UPDATE customers SET title=?, fname=?, lname=?, phone=?, addressline=?, town=?, zipcode=?`;
+    let params = [title, fname, lname, phone, addressline, town, zipcode];
+
+    // If an image was uploaded, append it to the SQL query
+    if (imagePath) {
+      sql += `, image=?`;
+      params.push(imagePath);
+    }
+    
+    sql += ` WHERE user_id=?`;
+    params.push(userId);
+
+    db.query(sql, params, (err, result) => {
+      if (err) return res.status(500).json({ success: false, message: 'Database error updating profile.' });
+      
+      res.json({ 
+        success: true, 
+        message: 'Profile updated successfully!', 
+        newImage: imagePath 
+      });
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error.', error: error.message });
+  }
+}
+
+// Add these exports at the bottom
+module.exports = {
+  getUsers,
+  updateUserRole,
+  deactivateUser,
+  getProfile,    // Must include
+  updateProfile  // Must include
+};
+
+// Ensure these functions exist in the file:
+async function getProfile(req, res) {
+
+  const userId = 1; // Change this to your test user ID
+  const sql = `SELECT * FROM customers WHERE user_id = ?`;
+  db.query(sql, [userId], (err, results) => {
+    if (err) return res.status(500).json({ error: 'DB Error' });
+    res.json({ customerDetails: results[0] || {} });
+  });
+}
+
+async function updateProfile(req, res) {
+  // Your update logic...
+  res.json({ success: true });
+}
