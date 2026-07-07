@@ -1,20 +1,19 @@
 // routes/orderRoutes.js
 const express = require('express');
 const router = express.Router();
-const { getAllOrders, updateOrderStatus, getOrderDetails, createOrder, getUserSpecificOrders } = require('../controllers/orderController');
+const { getAllOrders, updateOrderStatus, getOrderDetails, createOrder, getUserSpecificOrders, downloadReceiptPdf } = require('../controllers/orderController');
 const { verifyAdmin, verifyToken } = require('../middlewares/auth');
 
-console.log('getAllOrders type:', typeof getAllOrders);
-console.log('updateOrderStatus type:', typeof updateOrderStatus);
-console.log('getOrderDetails type:', typeof getOrderDetails);
-console.log('verifyAdmin type:', typeof verifyAdmin);
-
-// Admin routes
+// Admin routing rules
 router.get('/', verifyAdmin, getAllOrders);
 router.get('/:id', verifyAdmin, getOrderDetails);
 router.put('/:id/status', verifyAdmin, updateOrderStatus);
+router.get('/:id/receipt', verifyAdmin, downloadReceiptPdf); // Main secure admin panel download channel
 
-// User routes
+// Email-friendly route: Allows users to download receipts via direct email link interaction
+router.get('/:id/receipt/download', downloadReceiptPdf); 
+
+// Customer specific actions routing paths
 router.post('/place', verifyToken, createOrder);                         
 router.get('/my-orders', verifyToken, getUserSpecificOrders);            
 
