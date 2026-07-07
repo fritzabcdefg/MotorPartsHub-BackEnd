@@ -11,7 +11,7 @@ const orderRoutes = require('./routes/orderRoutes');
 const transactionRoutes = require('./routes/transactionRoutes');
 const categoryRoutes = require('./routes/categoryRoutes');
 const reviewsRouter = require('./routes/reviewRoutes');
-const { verifyAdmin } = require('./middlewares/auth');
+const { verifyAdmin, verifyToken } = require('./middlewares/auth');
 const { uploadDir } = require('./utils/upload');
 const { itemUploadDir } = require('./utils/itemUpload');
 const { Item, Category } = require('./models');
@@ -62,11 +62,11 @@ app.use('/api/v1', authRoutes);
 app.use('/api/v1/users', userRoutes);
 app.delete('/api/v1/deactivate', verifyAdmin, require('./controllers/userController').deactivateUser);
 app.use('/api/v1/items', itemRoutes);
-app.use('/api/v1/orders', orderRoutes);
-app.use('/api/v1/transactions', transactionRoutes);
+app.use('/api/v1/orders', orderRoutes); 
 app.use('/api/v1/items', reviewsRouter);
 app.get('/api/v1/inventory', inventoryController.getAllInventory);
 app.get('/api/v1/reviews', reviewController.getAllReviews);
+app.post('/api/v1/reviews', verifyToken, reviewController.createReview); 
 app.use('/api/v1/categories', categoryRoutes);
 
 // Catalog APIs

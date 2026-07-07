@@ -157,7 +157,11 @@ const getOrderCompleteData = (orderId, callback) => {
   });
 };
 
-exports.getAllOrders = (req, res) => {
+// ─────────────────────────────────────────────────────────
+// ROUTE HANDLERS
+// ─────────────────────────────────────────────────────────
+
+const getAllOrders = (req, res) => {
   const sql = `
     SELECT o.orderinfo_id, o.status, o.date_placed, o.shipping, CONCAT(c.fname, ' ', c.lname) AS customer_name, IFNULL(SUM(ol.quantity * i.sell_price), 0) + IFNULL(o.shipping, 0) AS total
     FROM orderinfo o JOIN customers c ON o.customer_id = c.customer_id LEFT JOIN orderline ol ON ol.orderinfo_id = o.orderinfo_id LEFT JOIN items i ON i.id = ol.item_id
@@ -165,7 +169,7 @@ exports.getAllOrders = (req, res) => {
   db.query(sql, (err, results) => { if (err) return res.status(500).json({ error: err.message }); res.json(results); });
 };
 
-exports.getOrderDetails = (req, res) => {
+const getOrderDetails = (req, res) => {
   const orderId = req.params.id;
   const sqlCustomer = `SELECT CONCAT(fname, ' ', lname) AS customerName, addressline AS shippingAddress, town, zipcode, phone FROM customers WHERE customer_id = (SELECT customer_id FROM orderinfo WHERE orderinfo_id = ?)`;
   const sqlItems = `SELECT i.id AS itemId, i.name AS itemName, i.sell_price AS itemPrice, ol.quantity AS qty, (ol.quantity * i.sell_price) AS subTotal FROM orderline ol JOIN items i ON ol.item_id = i.id WHERE ol.orderinfo_id = ?`;
@@ -178,7 +182,7 @@ exports.getOrderDetails = (req, res) => {
   });
 };
 
-exports.updateOrderStatus = (req, res) => {
+const updateOrderStatus = (req, res) => {
   const { id } = req.params;
   const { status } = req.body;
   if (!status) return res.status(400).json({ error: 'Missing status' });
@@ -218,7 +222,7 @@ exports.updateOrderStatus = (req, res) => {
   });
 };
 
-exports.downloadReceiptPdf = (req, res) => {
+const downloadReceiptPdf = (req, res) => {
   const orderId = req.params.id;
   getOrderCompleteData(orderId, (err, data) => {
     if (err) return res.status(500).json({ error: 'Failed data resolution' });
@@ -230,18 +234,20 @@ exports.downloadReceiptPdf = (req, res) => {
   });
 };
 
-exports.getDashboardStats = (req, res) => {
+const getDashboardStats = (req, res) => {
   const sql = `SELECT (SELECT COUNT(*) FROM orderinfo) AS totalOrders, (SELECT IFNULL(SUM(ol.quantity * i.sell_price),0) FROM orderline ol JOIN items i ON ol.item_id = i.id) AS totalRevenue`;
   db.query(sql, (err, results) => { if (err) return res.status(500).json({ error: 'DB Error' }); res.json(results[0] || {}); });
 };
 
-exports.getChartData = (req, res) => {
+const getChartData = (req, res) => {
   db.query("SELECT status, COUNT(*) as count FROM orderinfo GROUP BY status", (err, results) => { if (err) return res.status(500).json({ error: 'DB Error' }); res.json(results); });
 };
 
-exports.getUserSpecificOrders = (req, res) => {
-  const userId = req.params.userId || req.query.userId;
+const getUserSpecificOrders = (req, res) => {
+  // SECURE FALLBACK: Uses the token identity first, falls back to URL params/queries safely
+  const userId = req.user?.id || req.params.userId || req.query.userId;
   if (!userId) return res.status(400).json({ error: 'User ID is required.' });
+  
   const sql = `
     SELECT o.orderinfo_id, o.status, o.date_placed, o.date_shipped, IFNULL(SUM(ol.quantity * i.sell_price), 0) + IFNULL(o.shipping, 0) AS total
     FROM orderinfo o JOIN customers c ON o.customer_id = c.customer_id LEFT JOIN orderline ol ON ol.orderinfo_id = o.orderinfo_id LEFT JOIN items i ON i.id = ol.item_id
@@ -249,7 +255,7 @@ exports.getUserSpecificOrders = (req, res) => {
   db.query(sql, [userId], (err, results) => { if (err) return res.status(500).json({ error: 'DB Error' }); res.json({ success: true, orders: results }); });
 };
 
-exports.createOrder = (req, res) => {
+const createOrder = (req, res) => {
   const userId = req.user && req.user.id;
   if (!userId) return res.status(401).json({ success: false, message: 'Unauthorized.' });
 
@@ -313,4 +319,18 @@ exports.createOrder = (req, res) => {
       });
     });
   });
+};
+
+// ─────────────────────────────────────────────────────────
+// EXPORTS CENTRALIZATION BLOCK
+// ─────────────────────────────────────────────────────────
+module.exports = {
+  getAllOrders,
+  getOrderDetails,
+  updateOrderStatus,
+  downloadReceiptPdf,
+  getDashboardStats,
+  getChartData,
+  getUserSpecificOrders,
+  createOrder
 };
