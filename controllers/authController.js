@@ -1,6 +1,9 @@
 const { User, sequelize } = require('../models');
 const { findUserById } = require('../utils/userHelpers');
 const { sendActivationEmail } = require('../utils/emailService');
+const { frontendOrigins } = require('../utils/config');
+const jwt = require('jsonwebtoken');                                    
+const JWT_SECRET = process.env.JWT_SECRET || 'your_fallback_secret_key'; 
 
 // ==========================================
 // 1. REGISTER (Handles Active & Inactive Accounts)
@@ -92,7 +95,11 @@ async function login(req, res) {
     return res.status(401).json({ message: 'Invalid email or password.' });
   }
 
-  const token = `token-${user.id}-${Date.now()}`;
+  const token = jwt.sign(
+    { id: user.id, email: user.email, role: user.role },
+    JWT_SECRET,
+    { expiresIn: '7d' }
+  );
   await user.update({ token });
 
   return res.json({
@@ -114,14 +121,18 @@ async function verifyEmail(req, res) {
     const user = await User.findOne({ where: { token } });
     if (!user) return res.status(400).send('Invalid or expired activation token.');
 
-    const sessionToken = `token-${user.id}-${Date.now()}`;
+    const sessionToken = jwt.sign(
+      { id: user.id, email: user.email, role: user.role },
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    );
     await user.update({
       active: 1,
       token: sessionToken 
     });
 
-    return res.redirect(`http://localhost:3000/setup-profile.html?token=${sessionToken}&userId=${user.id}&email=${user.email}`);
-  } catch (err) {
+    const baseUrl = process.env.FRONTEND_URL || 'http://localhost:4000';
+    return res.redirect(`${baseUrl}/setup-profile.html?token=${sessionToken}&userId=${user.id}&email=${user.email}`);  } catch (err) {
     return res.status(500).send('Error during verification processing.');
   }
 }
@@ -131,25 +142,26 @@ async function verifyEmail(req, res) {
 // ==========================================
 async function setupProfile(req, res) {
   const { userId, title, fname, lname, addressline, town, zipcode, phone } = req.body;
-  
-  // Explicitly check each field so the frontend receives the exact problem column
+
   if (!userId) return res.status(400).json({ message: 'Profile Setup Error: Missing userId parameter from activation link.' });
   if (!fname || !fname.trim()) return res.status(400).json({ message: 'Profile Setup Error: First Name field is required.' });
   if (!lname || !lname.trim()) return res.status(400).json({ message: 'Profile Setup Error: Last Name field is required.' });
   if (!addressline || !addressline.trim()) return res.status(400).json({ message: 'Profile Setup Error: Address Line field is required.' });
   if (!town || !town.trim()) return res.status(400).json({ message: 'Profile Setup Error: Town/City field is required.' });
 
+  // ADDED: read the uploaded avatar path, matching the /uploads static route
+  const imagePath = req.file ? `/uploads/${req.file.filename}` : null;
+
   try {
     const user = await User.findByPk(userId);
     if (!user) return res.status(404).json({ message: 'Profile Setup Error: Active User account not found in database.' });
-    
-    // Update the name on the users table
+
     await user.update({ name: `${fname.trim()} ${lname.trim()}` });
 
-    // Insert into the customers table directly via raw query 
+    // CHANGED: added image column
     await sequelize.query(
-      `INSERT INTO customers (title, fname, lname, addressline, town, zipcode, phone, user_id) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?);`,
+      `INSERT INTO customers (title, fname, lname, addressline, town, zipcode, phone, image, user_id) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);`,
       { 
         replacements: [
           title || 'Mr.', 
@@ -159,6 +171,7 @@ async function setupProfile(req, res) {
           town.trim(), 
           zipcode?.trim() || null, 
           phone?.trim() || null, 
+          imagePath,
           userId
         ] 
       }

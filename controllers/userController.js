@@ -1,4 +1,5 @@
 const db = require('../utils/db');
+const { User } = require('../models');
 const { getAllUsers, findUserByEmail, findUserById } = require('../utils/userHelpers');
 
 async function getUsers(req, res) {
@@ -43,76 +44,118 @@ async function deactivateUser(req, res) {
 
   return res.json({ success: true, message: 'User account deactivated.' });
 }
-
-module.exports = {
-  getUsers,
-  updateUserRole,
-  deactivateUser
-};
-
 async function updateProfile(req, res) {
-  const { userId, title, fname, lname, phone, addressline, town, zipcode } = req.body;
-  
-  if (!userId) {
-    return res.status(400).json({ success: false, message: 'User ID is required.' });
-  }
-
-  // Check if a new file was uploaded via multer
-  let imagePath = null;
-  if (req.file) {
-    // Save the relative path so the frontend can read it directly
-    imagePath = `/img/avatars/${req.file.filename}`;
-  }
-
   try {
-    // 1. Update the Customer details
-    let sql = `UPDATE customers SET title=?, fname=?, lname=?, phone=?, addressline=?, town=?, zipcode=?`;
-    let params = [title, fname, lname, phone, addressline, town, zipcode];
+    const { userId, title, fname, lname, phone, addressline, town, zipcode } = req.body;
 
-    // If an image was uploaded, append it to the SQL query
-    if (imagePath) {
-      sql += `, image=?`;
-      params.push(imagePath);
+    if (!userId) {
+      return res.status(400).json({ success: false, message: 'User ID is required.' });
     }
-    
-    sql += ` WHERE user_id=?`;
-    params.push(userId);
 
-    db.query(sql, params, (err, result) => {
-      if (err) return res.status(500).json({ success: false, message: 'Database error updating profile.' });
-      
-      res.json({ 
-        success: true, 
-        message: 'Profile updated successfully!', 
-        newImage: imagePath 
+    // ADDED: handle password change through Sequelize so bcrypt hook fires
+    const newPassword = req.body.password ? req.body.password.trim() : null;
+    if (newPassword) {
+      const user = await User.findByPk(userId);
+      if (!user) return res.status(404).json({ success: false, message: 'User not found.' });
+      // Assigning triggers user.changed('password') = true, so beforeUpdate hook hashes it
+      user.password = newPassword;
+      await user.save();
+    }
+
+    let imagePath = null;
+    if (req.file) {
+      imagePath = `/uploads/${req.file.filename}`;
+    }
+
+    let sql;
+    let queryParams;
+
+    if (imagePath) {
+      sql = `
+        UPDATE customers 
+        SET title = ?, fname = ?, lname = ?, phone = ?, addressline = ?, town = ?, zipcode = ?, image = ? 
+        WHERE user_id = ?
+      `;
+      queryParams = [title, fname, lname, phone, addressline, town, zipcode, imagePath, userId];
+    } else {
+      sql = `
+        UPDATE customers 
+        SET title = ?, fname = ?, lname = ?, phone = ?, addressline = ?, town = ?, zipcode = ? 
+        WHERE user_id = ?
+      `;
+      queryParams = [title, fname, lname, phone, addressline, town, zipcode, userId];
+    }
+
+    db.query(sql, queryParams, (err, result) => {
+      if (err) {
+        console.error("MySQL Update Error:", err);
+        return res.status(500).json({ success: false, message: 'Database failed to save profile.' });
+      }
+
+      return res.json({
+        success: true,
+        message: 'Profile updated successfully!',
+        savedImagePath: imagePath
       });
     });
+
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error.', error: error.message });
+    console.error("Controller Error:", error);
+    res.status(500).json({ success: false, message: 'Internal server saving error.' });
   }
 }
 
-// Add these exports at the bottom
-module.exports = {
+const getProfile = (req, res) => {
+
+  const userId = req.user.id;
+
+  const userQuery = 'SELECT id, email, role FROM users WHERE id = ?';
+
+  db.query(userQuery, [userId], (userErr, userResults) => {
+    if (userErr) {
+      console.error("❌ Database error pulling from 'users' table:", userErr);
+      return res.status(500).json({ success: false, message: "Database server failure." });
+    }
+
+    if (userResults.length === 0) {
+      return res.status(404).json({ success: false, message: "Target account identity record not found." });
+    }
+
+    const userData = userResults[0];
+
+    // 3. Fetch Shipping, Avatar, and Profile Schema Data
+    const customerQuery = 'SELECT * FROM customers WHERE user_id = ?';
+
+    db.query(customerQuery, [userId], (custErr, custResults) => {
+      if (custErr) {
+        console.error("❌ Database error pulling from 'customers' table:", custErr);
+        return res.status(500).json({ success: false, message: "Profile database server failure." });
+      }
+
+      // 4. Default Schema Fallback Guard
+      // If the row doesn't exist yet, pass a clean object configuration back
+      const customerData = custResults[0] || {
+        title: 'Mr.',
+        fname: '',
+        lname: '',
+        phone: '',
+        addressline: '',
+        town: '',
+        zipcode: '',
+        image: '/img/avatars/default.png' // Default placeholder asset location
+      };
+
+      return res.status(200).json({
+        user: userData,
+        customerDetails: customerData
+      });
+    });
+  });
+};
+  module.exports = {
   getUsers,
   updateUserRole,
   deactivateUser,
-  getProfile,    // Must include
-  updateProfile  // Must include
+  getProfile,     
+  updateProfile   
 };
-
-// Ensure these functions exist in the file:
-async function getProfile(req, res) {
-
-  const userId = 1; // Change this to your test user ID
-  const sql = `SELECT * FROM customers WHERE user_id = ?`;
-  db.query(sql, [userId], (err, results) => {
-    if (err) return res.status(500).json({ error: 'DB Error' });
-    res.json({ customerDetails: results[0] || {} });
-  });
-}
-
-async function updateProfile(req, res) {
-  // Your update logic...
-  res.json({ success: true });
-}

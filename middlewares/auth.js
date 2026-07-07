@@ -8,9 +8,7 @@ const verifyToken = (req, res, next) => {
   const token = authHeader && authHeader.split(' ')[1];
 
   if (!token) {
-    console.log("⚠️ Auth Warning: No token sent by frontend. Bypassing to unblock page.");
-    req.user = { role: 'admin', id: 1 };
-    return next();
+    return res.status(401).json({ success: false, message: 'No token provided.' });
   }
 
   try {
@@ -18,33 +16,16 @@ const verifyToken = (req, res, next) => {
     req.user = verified;
     next();
   } catch (err) {
-    console.log(`❌ JWT Decryption Failed (${err.message}). Bypassing to unblock page.`);
-    const decoded = jwt.decode(token);
-    console.log("📋 Inside your broken token payload was:", decoded);
-    req.user = decoded || { role: 'admin' };
-    next();
+    return res.status(401).json({ success: false, message: 'Invalid or expired token.' });
   }
 };
 
 const verifyAdmin = (req, res, next) => {
   verifyToken(req, res, () => {
-    console.log("--- 🔍 ADMIN ROUTE SECURITY CHECK ---");
-    console.log("Current Logged-in User Object structure:", req.user);
-
-    const isAnAdmin = req.user && (
-      req.user.role === 'admin' ||
-      req.user.role === 'Admin' ||
-      req.user.isAdmin === true ||
-      req.user.is_admin === 1 ||
-      req.user.role == 1
-    );
-
-    if (isAnAdmin) {
-      console.log("✅ Admin verified successfully.");
-    } else {
-      console.log("⚠️ Role check failed. Bypassing check anyway to keep you unblocked.");
+    const isAdmin = req.user && (req.user.role === 'admin' || req.user.role === 'Admin');
+    if (!isAdmin) {
+      return res.status(403).json({ success: false, message: 'Admin access required.' });
     }
-
     next();
   });
 };

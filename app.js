@@ -3,7 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
-const { frontendOrigins } = require('./config');
+const { frontendOrigins } = require('./utils/config');
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const itemRoutes = require('./routes/itemRoutes');
@@ -28,8 +28,7 @@ const frontendRoot = candidateFrontendRoots[0] || path.resolve(__dirname, '..', 
 
 app.use(cors({
   origin: (origin, callback) => {
-    const allowedOrigins = [...(frontendOrigins || []), 'http://localhost:3000'];
-    if (!origin || allowedOrigins.includes(origin)) {
+    if (!origin || frontendOrigins.includes(origin)) {
       callback(null, true);
     } else {
       callback(new Error('Not allowed by CORS'));
@@ -85,6 +84,14 @@ app.use('/uploads', express.static(uploadDir));
 
 app.get('/', (req, res) => {
   res.sendFile(path.join(frontendRoot, 'public', 'home.html'));
+});
+
+app.use((err, req, res, next) => {
+  if (err.message === 'Not allowed by CORS') {
+    return res.status(403).json({ message: 'CORS: origin not allowed.' });
+  }
+  console.error(err);
+  res.status(500).json({ message: 'Internal server error.' });
 });
 
 module.exports = app;

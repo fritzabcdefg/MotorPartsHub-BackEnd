@@ -14,27 +14,27 @@ async function seed() {
 
     // --- 1. Seed users ---
     const users = [
-      { name: 'Fritzie', email: 'Fritzie@gmail.com', password: 'AdminPassword', role: 'admin' },
-      { name: 'Lorraine', email: 'Lorraine@gmail.com', password: 'AdminPassword', role: 'admin' },
-      { name: 'User Test', email: 'UserTest@gmail.com', password: 'CustomerPassword', role: 'user' },
-      { name: 'Customer One', email: 'cust1@gmail.com', password: 'CustPassword', role: 'user' },
-      { name: 'Customer Two', email: 'cust2@gmail.com', password: 'CustPassword', role: 'user' },
-      { name: 'Admin Mark', email: 'mark.admin@gmail.com', password: 'AdminPassword123', role: 'admin' },
-      { name: 'Alice Smith', email: 'alice.smith@gmail.com', password: 'CustPassword123', role: 'user' },
-      { name: 'Bob Johnson', email: 'bob.j@gmail.com', password: 'CustPassword123', role: 'user' },
-      { name: 'Charlie Brown', email: 'charlie.b@gmail.com', password: 'CustPassword123', role: 'user' },
-      { name: 'Diana Prince', email: 'diana.p@gmail.com', password: 'CustPassword123', role: 'user' },
-      { name: 'Evan Wright', email: 'evan.w@gmail.com', password: 'CustPassword123', role: 'user' },
-      { name: 'Fiona Gallagher', email: 'fiona.g@gmail.com', password: 'CustPassword123', role: 'user' },
-      { name: 'George Clark', email: 'george.c@gmail.com', password: 'CustPassword123', role: 'user' },
-      { name: 'Hannah Abbott', email: 'hannah.a@gmail.com', password: 'CustPassword123', role: 'user' },
-      { name: 'Ian Malcolm', email: 'ian.m@gmail.com', password: 'CustPassword123', role: 'user' }
+      { email: 'Fritzie@gmail.com', password: 'AdminPassword', role: 'admin' },
+      { email: 'Lorraine@gmail.com', password: 'AdminPassword', role: 'admin' },
+      { email: 'UserTest@gmail.com', password: 'CustomerPassword', role: 'user' },
+      { email: 'cust1@gmail.com', password: 'CustPassword', role: 'user' },
+      { email: 'cust2@gmail.com', password: 'CustPassword', role: 'user' },
+      { email: 'mark.admin@gmail.com', password: 'AdminPassword123', role: 'admin' },
+      { email: 'alice.smith@gmail.com', password: 'CustPassword123', role: 'user' },
+      { email: 'bob.j@gmail.com', password: 'CustPassword123', role: 'user' },
+      { email: 'charlie.b@gmail.com', password: 'CustPassword123', role: 'user' },
+      { email: 'diana.p@gmail.com', password: 'CustPassword123', role: 'user' },
+      { email: 'evan.w@gmail.com', password: 'CustPassword123', role: 'user' },
+      { email: 'fiona.g@gmail.com', password: 'CustPassword123', role: 'user' },
+      { email: 'george.c@gmail.com', password: 'CustPassword123', role: 'user' },
+      { email: 'hannah.a@gmail.com', password: 'CustPassword123', role: 'user' },
+      { email: 'ian.m@gmail.com', password: 'CustPassword123', role: 'user' }
     ];
     
     const userRecords = [];
     for (const u of users) {
       const [user, created] = await User.findOrCreate({ where: { email: u.email }, defaults: u });
-      if (!created) await user.update({ name: u.name, password: u.password, role: u.role, active: true });
+      if (!created) await user.update({ password: u.password, role: u.role, active: true });
       console.log(`${created ? 'Created' : 'Updated'} user: ${user.email} (${user.role})`);
       userRecords.push(user);
     }
@@ -45,9 +45,8 @@ async function seed() {
     
     for (const user of userRecords) {
       if (user.role === 'user') {
-        const nameParts = user.name.split(' ');
-        const firstName = nameParts[0] || 'John';
-        const lastName = nameParts[1] || 'Doe';
+        const firstName = user.email.split('@')[0] || 'John';
+        const lastName = 'Doe';
 
         const customerPayload = {
           title: 'Mr.',
@@ -69,7 +68,6 @@ async function seed() {
         if (!created) await customer.update(customerPayload);
         console.log(`${created ? 'Created' : 'Updated'} Customer Profile: ${customer.fname} ${customer.lname} (ID: ${customer.customer_id})`);
         
-        // Save the resulting customer_id index tied to the user's database ID
         customerIdMap[user.id] = customer.customer_id;
       }
     }

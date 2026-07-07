@@ -1,6 +1,6 @@
 const fs = require('fs');
 const multer = require('multer');
-const { uploadDir } = require('../config');
+const { uploadDir } = require('./config'); 
 
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });

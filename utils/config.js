@@ -8,12 +8,14 @@ const frontendOrigins = [
   'http://localhost:3000',
   'http://127.0.0.1:3000',
   'http://localhost:5173',
-  'http://127.0.0.1:5173'
+  'http://127.0.0.1:5173',
+  'http://localhost:4000',
+  'http://127.0.0.1:4000'
 ].filter(Boolean);
 
 module.exports = {
   port: process.env.PORT || 4000,
   frontendOrigins,
   rootDir: __dirname,
-  uploadDir: path.resolve(__dirname, '..', 'frontend', 'public', 'uploads')
+  uploadDir: path.resolve(__dirname, '..', 'uploads', 'avatars')
 };
