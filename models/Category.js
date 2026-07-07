@@ -15,7 +15,8 @@ const Category = sequelize.define('Category', {
   description: {
     type: DataTypes.TEXT,
     allowNull: true
-  }
+  },
+  is_deleted: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false }
 }, {
   tableName: 'categories',
   timestamps: false,

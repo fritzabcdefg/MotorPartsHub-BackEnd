@@ -16,7 +16,8 @@
     zipcode: { type: DataTypes.STRING(15), allowNull: true },
     phone: { type: DataTypes.STRING(45), allowNull: true },
     user_id: { type: DataTypes.BIGINT.UNSIGNED, allowNull: false },
-    image: { type: DataTypes.STRING(255), allowNull: true }
+    image: { type: DataTypes.STRING(255), allowNull: true },
+    is_deleted: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false }
   }, {
     tableName: 'customers',
     timestamps: false,

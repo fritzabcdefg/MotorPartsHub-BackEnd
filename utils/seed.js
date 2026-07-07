@@ -3,8 +3,10 @@ const sequelize = require('../models/database');
 const User = require('../models/User');
 const Customer = require('../models/Customer'); // Integrated Customer Model
 const Item = require('../models/Item');
+const Category = require('../models/Category');
 const OrderInfo = require('../models/OrderInfo');
 const OrderLine = require('../models/OrderLine');
+const Review = require('../models/Review');
 
 async function seed() {
   try {
@@ -72,7 +74,24 @@ async function seed() {
       }
     }
 
-    // --- 3. Seed items ---
+    // --- 3. Seed categories ---
+    const categories = [
+      { category_id: 1, name: 'Brakes', description: 'Brake pads, rotors, and related safety parts.' },
+      { category_id: 2, name: 'Fluids & Maintenance', description: 'Oils, fluids, filters, and cleaning products.' },
+      { category_id: 3, name: 'Wheels & Drive', description: 'Tires, chains, and drivetrain essentials.' },
+      { category_id: 4, name: 'Electrical', description: 'Batteries, spark plugs, and electrical components.' },
+      { category_id: 5, name: 'Lighting', description: 'Headlights, bulbs, and lighting upgrades.' },
+      { category_id: 6, name: 'Accessories', description: 'Practical accessories and security items.' },
+      { category_id: 7, name: 'Suspension', description: 'Shocks, struts, and suspension upgrades.' }
+    ];
+
+    for (const category of categories) {
+      const [record, created] = await Category.findOrCreate({ where: { category_id: category.category_id }, defaults: category });
+      if (!created) await record.update(category);
+      console.log(`${created ? 'Created' : 'Updated'} category: ${record.name}`);
+    }
+
+    // --- 4. Seed items ---
     const items = [
       { name: 'Brake Pad', description: 'Durable brake pad', cost_price: 500, sell_price: 750, supplier_name: 'MotoSupply Co.', category_id: 1, quantity: 100, img_path: 'uploads/brakepad.jpg' },
       { name: 'Engine Oil', description: 'Synthetic engine oil 1L', cost_price: 300, sell_price: 450, supplier_name: 'OilMasters', category_id: 2, quantity: 50, img_path: 'uploads/engineoil.jpg' },
@@ -98,7 +117,7 @@ async function seed() {
       itemRecords.push(item);
     }
 
-    // --- 4. Seed orders ---
+    // --- 5. Seed orders ---
     // Now pulling customer_id from customerIdMap instead of using the raw user ID
     const orders = [
       { customer_id: customerIdMap[userRecords[3].id], date_placed: '2026-07-01', date_shipped: '2026-07-03', shipping: 150.00, status: 'Shipped' },
@@ -106,12 +125,12 @@ async function seed() {
       { customer_id: customerIdMap[userRecords[6].id], date_placed: '2026-07-03', date_shipped: '2026-07-04', shipping: 120.00, status: 'Shipped' },
       { customer_id: customerIdMap[userRecords[7].id], date_placed: '2026-07-03', date_shipped: null, shipping: 150.00, status: 'Processing' },
       { customer_id: customerIdMap[userRecords[8].id], date_placed: '2026-07-04', date_shipped: '2026-07-05', shipping: 180.00, status: 'Shipped' },
-      { customer_id: customerIdMap[userRecords[9].id], date_placed: '2026-07-04', date_shipped: null, shipping: 0.00, status: 'Pending' },
+      { customer_id: customerIdMap[userRecords[9].id], date_placed: '2026-07-04', date_shipped: null, shipping: 0.00, status: 'Shipped' },
       { customer_id: customerIdMap[userRecords[10].id], date_placed: '2026-07-05', date_shipped: null, shipping: 250.00, status: 'Processing' },
-      { customer_id: customerIdMap[userRecords[11].id], date_placed: '2026-07-05', date_shipped: null, shipping: 100.00, status: 'Pending' },
+      { customer_id: customerIdMap[userRecords[11].id], date_placed: '2026-07-05', date_shipped: null, shipping: 100.00, status: 'Processing' },
       { customer_id: customerIdMap[userRecords[12].id], date_placed: '2026-07-05', date_shipped: null, shipping: 130.00, status: 'Processing' },
       { customer_id: customerIdMap[userRecords[13].id], date_placed: '2026-07-05', date_shipped: null, shipping: 140.00, status: 'Processing' },
-      { customer_id: customerIdMap[userRecords[14].id], date_placed: '2026-07-05', date_shipped: null, shipping: 160.00, status: 'Pending' },
+      { customer_id: customerIdMap[userRecords[14].id], date_placed: '2026-07-05', date_shipped: null, shipping: 160.00, status: 'Cancelled' },
       { customer_id: customerIdMap[userRecords[6].id], date_placed: '2026-07-05', date_shipped: null, shipping: 90.00, status: 'Processing' }
     ];
 
@@ -123,7 +142,62 @@ async function seed() {
       orderRecords.push(order);
     }
 
-    // --- 5. Seed order lines ---
+    // --- 6. Seed reviews ---
+    const reviews = [
+      {
+        item_id: itemRecords[0].id,
+        orderinfo_id: orderRecords[0].orderinfo_id,
+        user_id: userRecords[3].id,
+        user_name: userRecords[3].email.split('@')[0],
+        rating: 5,
+        comment: 'Brake pads feel solid and the stopping power improved immediately.',
+        is_visible: true
+      },
+      {
+        item_id: itemRecords[1].id,
+        orderinfo_id: orderRecords[0].orderinfo_id,
+        user_id: userRecords[3].id,
+        user_name: userRecords[3].email.split('@')[0],
+        rating: 4,
+        comment: 'Engine oil arrived on time and performs smoothly in hot weather.',
+        is_visible: true
+      },
+      {
+        item_id: itemRecords[2].id,
+        orderinfo_id: orderRecords[1].orderinfo_id,
+        user_id: userRecords[4].id,
+        user_name: userRecords[4].email.split('@')[0],
+        rating: 5,
+        comment: 'Great grip and durable build for daily rides.',
+        is_visible: true
+      },
+      {
+        item_id: itemRecords[6].id,
+        orderinfo_id: orderRecords[3].orderinfo_id,
+        user_id: userRecords[7].id,
+        user_name: userRecords[7].email.split('@')[0],
+        rating: 4,
+        comment: 'The headlights are bright and easy to install.',
+        is_visible: true
+      },
+      {
+        item_id: itemRecords[9].id,
+        orderinfo_id: orderRecords[6].orderinfo_id,
+        user_id: userRecords[10].id,
+        user_name: userRecords[10].email.split('@')[0],
+        rating: 5,
+        comment: 'The rear shock absorber made the ride much more stable.',
+        is_visible: true
+      }
+    ];
+
+    for (const review of reviews) {
+      const [record, created] = await Review.findOrCreate({ where: { item_id: review.item_id, user_id: review.user_id }, defaults: review });
+      if (!created) await record.update(review);
+      console.log(`${created ? 'Created' : 'Updated'} review for item ${review.item_id}`);
+    }
+
+    // --- 7. Seed order lines ---
     const orderLines = [
       { orderinfo_id: orderRecords[0].orderinfo_id, item_id: itemRecords[0].id, quantity: 2 },
       { orderinfo_id: orderRecords[0].orderinfo_id, item_id: itemRecords[1].id, quantity: 1 },

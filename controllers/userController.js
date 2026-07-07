@@ -7,7 +7,6 @@ async function getUsers(req, res) {
     const allUsers = await getAllUsers();
     const userList = allUsers.map((u) => ({
       id: u.id,
-      name: u.name,
       email: u.email,
       role: u.role || 'user',
       active: u.active
