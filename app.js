@@ -90,6 +90,7 @@ app.use(express.static(path.join(frontendRoot, 'public')));
 
 app.use('/uploads', express.static(uploadDir));
 app.use('/uploads', express.static(itemUploadDir));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 app.get('/', (req, res) => {
   res.sendFile(path.join(frontendRoot, 'public', 'home.html'));
