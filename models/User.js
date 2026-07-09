@@ -20,7 +20,8 @@ const User = sequelize.define('User', {
   password: { type: DataTypes.STRING, allowNull: false },
   active: { type: DataTypes.BOOLEAN, defaultValue: true },
   role: { type: DataTypes.STRING, defaultValue: 'user' },
-  token: { type: DataTypes.STRING, allowNull: true }
+  token: { type: DataTypes.STRING, allowNull: true },
+  is_deleted: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false }
 }, {
   tableName: 'users',
   timestamps: false,

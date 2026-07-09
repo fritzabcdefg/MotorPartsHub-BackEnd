@@ -15,7 +15,8 @@ const Item = sequelize.define('Item', {
   supplier_name: { type: DataTypes.STRING, allowNull: true },
   category_id: { type: DataTypes.INTEGER, allowNull: true },
   quantity: { type: DataTypes.INTEGER, defaultValue: 0 },
-  img_path: { type: DataTypes.STRING, allowNull: true }
+  img_path: { type: DataTypes.STRING, allowNull: true },
+  is_deleted: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false }
 }, {
   tableName: 'items',
   timestamps: true,

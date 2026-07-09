@@ -1,3 +1,4 @@
+// C:\MotorPartsHub-BackEnd\utils\emailService.js
 const nodemailer = require('nodemailer');
 
 const transporter = nodemailer.createTransport({
@@ -38,10 +39,10 @@ const sendActivationEmail = async (email, token) => {
   });
 };
 
-// ─────────────────────────────────────────
-// ORDER RECEIPT EMAIL — ADDED
-// ─────────────────────────────────────────
-const sendOrderReceiptEmail = async ({ email, fname, lname, phone, zipcode, items, itemsTotal, shipping, total, address }) => {
+// ─────────────────────────────────────────────────────────
+// ORDER RECEIPT EMAIL — DYNAMIC STATUS NAME & DOWNLOAD BUTTON
+// ─────────────────────────────────────────────────────────
+const sendOrderReceiptEmail = async ({ orderId, status, email, fname, lname, phone, zipcode, items, itemsTotal, shipping, total, address, downloadLink, pdfBuffer }) => {
 
   // Build itemized rows for the email table
   const itemRows = items.map(item => `
@@ -67,11 +68,18 @@ const sendOrderReceiptEmail = async ({ email, fname, lname, phone, zipcode, item
         MotorPartsHub
       </h1>
 
-      <!-- Confirmation -->
+      <!-- Dynamic Confirmation Title based on current status -->
       <div style="text-align: center; margin-bottom: 28px;">
-        <span style="font-size: 2.5rem;">🎉</span>
-        <h2 style="color: #ffffff; margin: 8px 0 4px;">Order Confirmed!</h2>
-        <p style="color: #b3a1d9; margin: 0;">Hi ${fname}, thank you for your order.</p>
+        <span style="font-size: 2.5rem;">📦</span>
+        <h2 style="color: #ffffff; margin: 8px 0 4px;">Order #${orderId} is ${status}!</h2>
+        <p style="color: #b3a1d9; margin: 0;">Hi ${fname}, your order tracking milestone has progressed.</p>
+        
+        <!-- Actionable download button inside email body -->
+        <div style="margin-top: 24px; margin-bottom: 10px;">
+          <a href="${downloadLink}" style="background-color: #28a745; color: #ffffff; text-decoration: none; padding: 14px 30px; font-weight: bold; border-radius: 6px; box-shadow: 0 4px 14px rgba(40, 167, 69, 0.4); display: inline-block; font-size: 1.05rem;">
+            📥 Download PDF Receipt
+          </a>
+        </div>
       </div>
 
       <!-- Items Table -->
@@ -135,8 +143,10 @@ const sendOrderReceiptEmail = async ({ email, fname, lname, phone, zipcode, item
   await transporter.sendMail({
     from:    '"MotorPartsHub Orders" <orders@motorpartshub.com>',
     to:      email,
-    subject: `Order Confirmed — MotorPartsHub`,
-    html:    htmlContent
+    // Dynamically names the email subject according to the status string name variable
+    subject: `[Update] Order #${orderId} Status: ${status} — MotorPartsHub`,
+    html:    htmlContent,
+    attachments: pdfBuffer ? [{ filename: `Receipt-Order-${orderId}.pdf`, content: pdfBuffer }] : []
   });
 };
 

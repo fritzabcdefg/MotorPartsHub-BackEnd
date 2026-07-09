@@ -16,7 +16,8 @@ const OrderInfo = sequelize.define('OrderInfo', {
     type: DataTypes.ENUM('Processing', 'Shipped', 'Delivered', 'Cancelled'),
     allowNull: false,
     defaultValue: 'Processing'
-  }
+  },
+  is_deleted: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false }
 }, {
   tableName: 'orderinfo',
   timestamps: false,

@@ -12,7 +12,8 @@ const OrderLine = sequelize.define('OrderLine', {
     primaryKey: true,
     allowNull: false
   },
-  quantity: { type: DataTypes.SMALLINT, allowNull: true }
+  quantity: { type: DataTypes.SMALLINT, allowNull: true },
+  is_deleted: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false }
 }, {
   tableName: 'orderline',
   timestamps: false,

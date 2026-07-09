@@ -8,8 +8,12 @@ const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const itemRoutes = require('./routes/itemRoutes');
 const orderRoutes = require('./routes/orderRoutes');
-const { verifyAdmin } = require('./middlewares/auth');
+const transactionRoutes = require('./routes/transactionRoutes');
+const categoryRoutes = require('./routes/categoryRoutes');
+const reviewsRouter = require('./routes/reviewRoutes');
+const { verifyAdmin, verifyToken } = require('./middlewares/auth');
 const { uploadDir } = require('./utils/upload');
+const { itemUploadDir } = require('./utils/itemUpload');
 const { Item, Category } = require('./models');
 const { getParts, getCatalog, getCategories } = require('./controllers/itemController');
 const orderController = require('./controllers/orderController');
@@ -56,11 +60,14 @@ app.get('/api/v1/dashboard-stats', orderController.getDashboardStats);
 // Management Table APIs
 app.use('/api/v1', authRoutes);
 app.use('/api/v1/users', userRoutes);
+app.delete('/api/v1/deactivate', verifyAdmin, require('./controllers/userController').deactivateUser);
 app.use('/api/v1/items', itemRoutes);
-app.use('/api/v1/orders', orderRoutes);
+app.use('/api/v1/orders', orderRoutes); 
+app.use('/api/v1/items', reviewsRouter);
 app.get('/api/v1/inventory', inventoryController.getAllInventory);
 app.get('/api/v1/reviews', reviewController.getAllReviews);
-app.get('/api/v1/categories', categoryController.getAllCategories);
+app.post('/api/v1/reviews', verifyToken, reviewController.createReview); 
+app.use('/api/v1/categories', categoryRoutes);
 
 // Catalog APIs
 app.get('/api/v1/parts', verifyAdmin, getParts);
@@ -80,7 +87,10 @@ app.get('/admin/:page', (req, res, next) => {
 app.use('/css', express.static(path.join(frontendRoot, 'css')));
 app.use('/js', express.static(path.join(frontendRoot, 'js')));
 app.use(express.static(path.join(frontendRoot, 'public')));
+
 app.use('/uploads', express.static(uploadDir));
+app.use('/uploads', express.static(itemUploadDir));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 app.get('/', (req, res) => {
   res.sendFile(path.join(frontendRoot, 'public', 'home.html'));
